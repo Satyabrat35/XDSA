@@ -1,4 +1,4 @@
-from flask import Flask, render_template, Response
+from flask import Flask, render_template, Response, request
 # import os
 # import random
 import cv2
@@ -50,7 +50,7 @@ def hosting():
     ServerThread.start()
     return render_template('index.html')
 
-@app.route('/connectfeed')
+@app.route('/connectfeed',methods=['POST'])
 def connectfeed():
     global HOST
     ip_addr = request.form['inputval']
@@ -78,9 +78,9 @@ def RecieveFrame(clientVideoSocket):
             if len(databytes1) == length:
                 print("Recieving Media..")
                 print("Image Frame Size:- {}".format(len(img)))
-                # img = np.array(list(img))
-                # img = np.array(img, dtype = np.uint8).reshape(200, 200, 3)
-                # img = cv2.resize(img,(640,480))
+                img = np.array(list(img))
+                img = np.array(img, dtype = np.uint8).reshape(200, 200, 3)
+                img = cv2.resize(img,(640,480))
                 if ipUser not in USERS:
                     USERS[ipUser] = img
                 else:
@@ -162,13 +162,13 @@ def gen(wvs):
                 background = cv2.resize(US[user], (640, 480))
                 overlay = wvs.read()
                 overlay = cv2.resize(overlay, (200, 150))
-                ret, frame = cv2.imencode('.jpg', overlay)
-                overlay = frame.tobytes()
                 s_img = overlay
                 finalImage = cv2.resize(background,(1080,600))
                 x_offset=880
                 y_offset=450
                 finalImage[y_offset:y_offset+s_img.shape[0], x_offset:x_offset+s_img.shape[1]] = s_img
+                ret, frame = cv2.imencode('.jpg', finalImage)
+                finalImage = frame.tobytes()
 
         elif len(US) == 2:
             frames = []
@@ -178,14 +178,14 @@ def gen(wvs):
             l_img2 = cv2.resize(frames[1], (640, 480))
             overlay = wvs.read()
             overlay = cv2.resize(overlay, (200, 150))
-            ret, frame = cv2.imencode('.jpg', overlay)
-            overlay = frame.tobytes()
             s_img = overlay
             l_img = np.hstack((l_img1, l_img2))
             finalImage = cv2.resize(l_img, (1080, 600))
             x_offset = 880
             y_offset = 450
             finalImage[y_offset:y_offset+s_img.shape[0], x_offset:x_offset+s_img.shape[1]] = s_img
+            ret, frame = cv2.imencode('.jpg', finalImage)
+            finalImage = frame.tobytes()
 
         elif len(US) == 3:
             frames = []
@@ -203,6 +203,8 @@ def gen(wvs):
             l_img5 = np.hstack((l_img3, s_img))
             finalImage = np.vstack((l_img4, l_img5))
             finalImage = cv2.resize(finalImage, (1080, 600))
+            ret,frame = cv2.imencode('.jpg' , finalImage)
+            finalImage = frame.tobytes()
 
         elif len(US) == 0:
             finalImage = wvs.read()
