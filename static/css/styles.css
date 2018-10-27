@@ -8,7 +8,9 @@ footer {
     bottom: 0;
     right: 20px;
 }
-
+#myForm {
+  color: #663399; 
+}
 .navbar {
   margin-bottom: 0;
   background-color: rgba(8, 8, 8, 0.8);

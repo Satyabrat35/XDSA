@@ -26,14 +26,21 @@
           <button class="button" id="host" onclick="show()"><span>Host </span></button>
           <button class="button" id="connect" onclick="connect()"><span>Connect </span></button>
         </div>
-
+        <form class="text-center" id="myForm" style="display:none;" action="/connectfeed" method="POST">
+          <font size="5px;">Enter IP: <input type="text" name="inputval"></font>
+        </form>
 
         <script type="text/javascript">
             function show() {
+              alert("Tell your friends to enter this IP: {{ ip_addr }}");
               location.href = "/hosted"
             }
             function connect(){
-              location.href = "/connectfeed"
+              form_bitch = document.getElementById('myForm');
+              document.getElementById('myForm').style.display="block";
+              document.getElementById("host").style.display="none";
+              document.getElementById("connect").style.display="none";
+              form.action = "/connectfeed"
             }
         </script>
         <footer>
