@@ -33,6 +33,8 @@ imageStream = np.array([])
 quit1=False
 startaudio = 1
 startvideo = 1
+f1,f2,f3,f4,f5,f6 = 0,0,0,0,0,0
+filter_list = {'f1':False,'f2':False,'f3':False,'f4':False,'f5':False,'f6':False}
 app = Flask(__name__)
 
 @app.route('/')
@@ -319,6 +321,65 @@ def quit112():
     print ("quit1 Sucess" , quit1)
     return render_template("home.html")
 
+@app.route('/f1')
+def filter_f1():
+    global f1
+    if f1==0:
+        f1 = 1
+        #func
+    else:
+        f1 = 0
+    return "Success"
+
+@app.route('/f2')
+def filter_f2():
+    global f2
+    if f2==0:
+        f2 = 1
+        #func
+    else:
+        f2 = 0
+    return "Success"
+
+@app.route('/f3')
+def filter_f3():
+    global f3
+    if f3==0:
+        f3 = 1
+        #func
+    else:
+        f3 = 0
+    return "Success"
+
+@app.route('/f4')
+def filter_f4():
+    global f4
+    if f4==0:
+        f4 = 1
+        #func
+    else:
+        f4 = 0
+    return "Success"
+
+@app.route('/f5')
+def filter_f5():
+    global f5
+    if f5==0:
+        f5 = 1
+        #func
+    else:
+        f5 = 0
+    return "Success"
+
+@app.route('/f6')
+def filter_f6():
+    global f6
+    if f6==0:
+        f6 = 1
+        #func
+    else:
+        f6 = 0
+    return "Success"
 
 def ServerMedia():
     # HOST = input("Enter Host IP\n")

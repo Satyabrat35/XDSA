@@ -24,6 +24,14 @@
                 <button class="bts-info" id="vid" ><span>Video <i class="fa fa-video-camera" aria-hidden="true"></i></span></button>
                 <button class="bts-info" id="aud" ><span>Audio <i class="fa fa-volume-up" aria-hidden="true"></i></span></button>
                 <button class="bts-danger" id="quit" ><span>Quit <i class="fa fa-times-circle-o" aria-hidden="true"></i></span></button>
+      </div>
+      <div class="text-center">
+            <button class="bts-snapped" id="f1"><span>Filter1</span></button>
+            <button class="bts-snapped" id="f2"><span>Filter2</span></button>
+            <button class="bts-snapped" id="f3"><span>Filter3</span></button>
+            <button class="bts-snapped" id="f4"><span>Filter4</span></button>
+            <button class="bts-snapped" id="f5"><span>Filter5</span></button>
+            <button class="bts-snapped" id="f6"><span>Filter6</span></button>         
                 <script type="text/javascript">
                     $(document).ready(function(){
                         $("#aud").click(function(){
@@ -43,6 +51,48 @@
                         $("#quit").click(function(){
                             $(this).toggleClass('bts-info bts-danger');
                             $.getJSON('/quit',function(data){
+                                //
+                            });
+                            return false;
+                        });
+                        $("#f1").click(function(){
+                            $(this).toggleClass('bts-snap bts-snapped');
+                            $.getJSON('/f1',function(data){
+                                //
+                            });
+                            return false;
+                        });
+                        $("#f2").click(function(){
+                            $(this).toggleClass('bts-snap bts-snapped');
+                            $.getJSON('/f2',function(data){
+                                //
+                            });
+                            return false;
+                        });
+                        $("#f3").click(function(){
+                            $(this).toggleClass('bts-snap bts-snapped');
+                            $.getJSON('/f3',function(data){
+                                //
+                            });
+                            return false;
+                        });
+                        $("#f4").click(function(){
+                            $(this).toggleClass('bts-snap bts-snapped');
+                            $.getJSON('/f4',function(data){
+                                //
+                            });
+                            return false;
+                        });
+                        $("#f5").click(function(){
+                            $(this).toggleClass('bts-snap bts-snapped');
+                            $.getJSON('/f5',function(data){
+                                //
+                            });
+                            return false;
+                        });
+                        $("#f6").click(function(){
+                            $(this).toggleClass('bts-snap bts-snapped');
+                            $.getJSON('/f6',function(data){
                                 //
                             });
                             return false;
