@@ -43,7 +43,7 @@ def home():
 
 @app.route('/hosted')
 def hosting():
-	global HOST
+    global HOST
     ip_addr = get_ip_address()
     HOST = ip_addr
     ServerThread = Thread(target = ServerMedia , args= ()) #####################CHAnge ServerMEdia File##########################
@@ -52,7 +52,7 @@ def hosting():
 
 @app.route('/connectfeed')
 def connectfeed():
-	global HOST
+    global HOST
     ip_addr = request.form['inputval']
     HOST = ip_addr
     return render_template("index.html")
