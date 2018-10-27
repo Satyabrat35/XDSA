@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from flask import Flask, render_template, Response
 # import os
 # import random
@@ -26,13 +25,6 @@ RATE=44100
 startaudio = 1
 startvideo = 1
 Quit = False
-=======
-from flask import Flask, render_template, Response, jsonify
-from camera import VideoCamera
-import os
-import random
-
->>>>>>> f222cd6fde1ed694d610bd5457c5f882649d10d8
 app = Flask(__name__)
 
 @app.route('/')
@@ -42,7 +34,6 @@ def home():
 
 @app.route('/hosted')
 def hosting():
-<<<<<<< HEAD
     ServerThread = Thread(target = ServerMedia , args= ()) #Add ServerMedia file as a function<3
     ServerThread.start()
     return render_template('index.html')
@@ -124,31 +115,10 @@ def listen():
         startaudio = 1
     else:
         startaudio = 0
-=======
-    return render_template('index.html')
-
-def gen(camera):
-    while True:
-        frame = camera.get_frame()
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
-
-@app.route('/video_feed')
-def video_feed():
-    return Response(gen(VideoCamera()),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
-
-@app.route('/audio')
-def listen():
-    lst = ['hjd','sdsd','asas']
-    words = {}
-    words['choice'] = random.choice(lst)
->>>>>>> f222cd6fde1ed694d610bd5457c5f882649d10d8
     print("success")
     return "jbsdj"
 
 
-<<<<<<< HEAD
 def SendFrame(clientVideoSocket):
     wvs = WebcamVideoStream(0).start()
     while Quit!=True:
@@ -322,7 +292,3 @@ def ServerMedia():
 
 if __name__ == "__main__":
     app.run(debug=True)
-=======
-if __name__ == "__main__":
-    app.run(debug=True)
->>>>>>> f222cd6fde1ed694d610bd5457c5f882649d10d8
