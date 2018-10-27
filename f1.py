@@ -12,7 +12,7 @@ import zlib
 import struct
 
 # HOST = input("Enter Server IP\n")
-HOST = '172.16.84.167'
+HOST = '172.16.84.70'
 PORT_AUDIO = 10000
 PORT1 = 4000
 PORT2 = 5000
@@ -63,12 +63,12 @@ def RecieveFrame(clientVideoSocket):
     global imageStream
     while True:
         lengthbuf = recvallVideo(clientVideoSocket, 4)
-        print('Lengthbuf - ',lengthbuf)
+        # print('Lengthbuf - ',lengthbuf)
         length, = struct.unpack('!I', lengthbuf)
-        print('Length - ',length)
+        # print('Length - ',length)
         databytes = recvallVideo(clientVideoSocket, length)
         databytes1 = databytes
-        print('Status - ',databytes[:6])
+        # print('Status - ',databytes[:6])
         STATUS = databytes[:6].decode()
         if STATUS == "ACTIVE" or STATUS == "INTIVE":
             lenip, = struct.unpack('!I',databytes[6:10])
@@ -76,8 +76,8 @@ def RecieveFrame(clientVideoSocket):
             databytes = databytes[(len(STATUS)+4+len(ipUser)):]
             img = zlib.decompress(databytes)
             if len(databytes1) == length:
-                print("Recieving Media..")
-                print("Image Frame Size:- {}".format(len(img)))
+                # print("Recieving Media..")
+                # print("Image Frame Size:- {}".format(len(img)))
                 img = np.array(list(img))
                 img = np.array(img, dtype = np.uint8).reshape(200, 200, 3)
                 img = cv2.resize(img,(640,480))
@@ -159,7 +159,7 @@ def gen(wvs):
         US = USERS.copy()
         if len(US) == 1:
             for user in US:
-                background = cv2.resize(US[user], (640, 480))
+                background = cv2.resize(US[user],(640,480))
                 overlay = wvs.read()
                 overlay = cv2.resize(overlay, (200, 150))
                 s_img = overlay
@@ -178,6 +178,8 @@ def gen(wvs):
             l_img2 = cv2.resize(frames[1], (640, 480))
             overlay = wvs.read()
             overlay = cv2.resize(overlay, (200, 150))
+            ret, frame = cv2.imencode('.jpg', overlay)
+            overlay = frame.tobytes()
             s_img = overlay
             l_img = np.hstack((l_img1, l_img2))
             finalImage = cv2.resize(l_img, (1080, 600))
@@ -203,7 +205,7 @@ def gen(wvs):
             l_img5 = np.hstack((l_img3, s_img))
             finalImage = np.vstack((l_img4, l_img5))
             finalImage = cv2.resize(finalImage, (1080, 600))
-            ret,frame = cv2.imencode('.jpg' , finalImage)
+            ret, frame = cv2.imencode('.jpg', finalImage)
             finalImage = frame.tobytes()
 
         elif len(US) == 0:
@@ -260,9 +262,7 @@ def SendFrame(clientVideoSocket1 , wvs):
         if startvideo == 1:
             frame = wvs.read()
             frame = cv2.resize(frame, (200,200))
-            ret, frame = cv2.imencode('.jpg', frame)
-            jpg_as_text = frame.tobytes()
-            jpg_as_text = zlib.compress(jpg_as_text, 9)
+            jpg_as_text = zlib.compress(frame, 9)
             lenip = struct.pack('!I',len(IP))
             if quit1 == False:
                 databytes = b"ACTIVE" + lenip + IP.encode() + jpg_as_text
@@ -322,7 +322,7 @@ def quit112():
 
 def ServerMedia():
     # HOST = input("Enter Host IP\n")
-    HOST = '172.16.84.167'
+    HOST = '172.16.84.70'
     PORT_AUDIO = 10000
     PORT1 = 4000
     PORT2 = 5000
