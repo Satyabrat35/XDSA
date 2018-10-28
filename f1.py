@@ -12,7 +12,7 @@ import zlib
 import struct
 
 # HOST = input("Enter Server IP\n")
-HOST = '172.16.84.167'
+HOST = '172.16.84.70'
 PORT_AUDIO = 10000
 PORT1 = 4000
 PORT2 = 5000
@@ -33,6 +33,8 @@ imageStream = np.array([])
 quit1=False
 startaudio = 1
 startvideo = 1
+f1,f2,f3,f4,f5,f6 = 0,0,0,0,0,0
+filter_list = {'f1':False,'f2':False,'f3':False,'f4':False,'f5':False,'f6':False}
 app = Flask(__name__)
 
 @app.route('/')
@@ -62,14 +64,13 @@ def RecieveFrame(clientVideoSocket):
     global quit1
     global imageStream
     while True:
-        q = quit1
         lengthbuf = recvallVideo(clientVideoSocket, 4)
-        print('Lengthbuf - ',lengthbuf)
+        # print('Lengthbuf - ',lengthbuf)
         length, = struct.unpack('!I', lengthbuf)
-        print('Length - ',length)
+        # print('Length - ',length)
         databytes = recvallVideo(clientVideoSocket, length)
         databytes1 = databytes
-        print('Status - ',databytes[:6])
+        # print('Status - ',databytes[:6])
         STATUS = databytes[:6].decode()
         if STATUS == "ACTIVE" or STATUS == "INTIVE":
             lenip, = struct.unpack('!I',databytes[6:10])
@@ -79,8 +80,9 @@ def RecieveFrame(clientVideoSocket):
             if len(databytes1) == length:
                 # print("Recieving Media..")
                 # print("Image Frame Size:- {}".format(len(img)))
-                img = np.array(list(img))##NOT THERE
-                img = np.array(img, dtype = np.uint8).reshape(200, 200, 3)##NOT THERE
+                img = np.array(list(img))
+                img = np.array(img, dtype = np.uint8).reshape(200, 200, 3)
+                img = cv2.resize(img,(640,480))
                 if ipUser not in USERS:
                     USERS[ipUser] = img
                 else:
@@ -90,10 +92,9 @@ def RecieveFrame(clientVideoSocket):
                         del USERS[ipUser]
             else:
                 print("Data CORRUPTED")
-        if q==True:
-            clientVideoSocket.shutdown(1)
-            clientVideoSocket.close()
-            break #######CHANGED######
+        else:
+            print('Status Error!:-    ',STATUS)
+            continue #Hope It Works
 
 @app.route('/video_feed')
 def video_feed():
@@ -110,6 +111,7 @@ def video_feed():
     clientVideoSocket1 = socket(family=AF_INET, type=SOCK_STREAM)
     clientVideoSocket1.connect((HOST, int(PORTNUMBER)))
     ports[PORTNUMBER] = True
+    SendFrameThread = Thread(target=SendFrame , args=(clientVideoSocket1 , wvs)).start()
 
     for portnos in sorted(ports.keys()):
         if ports[portnos] == False:
@@ -141,43 +143,29 @@ def video_feed():
     audio=pyaudio.PyAudio()
     stream=audio.open(format=FORMAT,channels=CHANNELS, rate=RATE, input=True, output = True,frames_per_buffer=CHUNK)
 
-    closethread = Thread(target = initialize , args = (clientVideoSocketUniv,))
-    closethread.start()
-
     SendAudioThread = Thread(target=SendAudio , args=(clientAudioSocket , stream ,))
     RecieveAudioThread = Thread(target=RecieveAudio , args=(clientAudioSocket , stream ,))
     # DisplayThread = Thread(target=display) #############         TRY          ######################
     # RecieveAudioThread.start()
     # DisplayThread.start()
     # SendAudioThread.start()
-    SendFrameThread = Thread(target=SendFrame , args=(clientVideoSocket1 , wvs)).start()
+    # SendAudioThread.join()
+
     return Response(gen(wvs),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
-    # SendAudioThread.join()
-    closethread.join()
-
-def initialize(clientVideoSocketUniv):
-    global quit1
-    while True:
-        q = quit1
-        if q == True:
-            clientVideoSocketUniv.shutdown(1)
-            clientVideoSocketUniv.close()
-            break
-        else:
-            pass
 
 def gen(wvs):
     global quit1
     global USERS
-    while True:
+    while quit1!=True:
         US = USERS.copy()
         if len(US) == 1:
             for user in US:
+                background = cv2.resize(US[user],(640,480))
                 overlay = wvs.read()
                 overlay = cv2.resize(overlay, (200, 150))
                 s_img = overlay
-                finalImage = cv2.resize(US[user],(1080,600))
+                finalImage = cv2.resize(background,(1080,600))
                 x_offset=880
                 y_offset=450
                 finalImage[y_offset:y_offset+s_img.shape[0], x_offset:x_offset+s_img.shape[1]] = s_img
@@ -188,10 +176,14 @@ def gen(wvs):
             frames = []
             for ip in US:
                 frames.append(USERS[ip])
+            l_img1 = cv2.resize(frames[0], (640, 480))
+            l_img2 = cv2.resize(frames[1], (640, 480))
             overlay = wvs.read()
             overlay = cv2.resize(overlay, (200, 150))
+            ret, frame = cv2.imencode('.jpg', overlay)
+            overlay = frame.tobytes()
             s_img = overlay
-            l_img = np.hstack((frames[0] , frames[1]))
+            l_img = np.hstack((l_img1, l_img2))
             finalImage = cv2.resize(l_img, (1080, 600))
             x_offset = 880
             y_offset = 450
@@ -203,11 +195,16 @@ def gen(wvs):
             frames = []
             for ip in US:
                 frames.append(USERS[ip])
+            l_img1 = cv2.resize(frames[0], (640, 480))
+            l_img2 = cv2.resize(frames[1], (640, 480))
+            l_img3 = cv2.resize(frames[2], (640, 480))
             overlay = wvs.read()
             overlay = cv2.resize(overlay, (640, 480))
+            ret, frame = cv2.imencode('.jpg', overlay)
+            overlay = frame.tobytes()
             s_img = overlay
-            l_img4 = np.hstack((frames[0] , frames[1]))
-            l_img5 = np.hstack((frames[2], s_img))
+            l_img4 = np.hstack((l_img1, l_img2))
+            l_img5 = np.hstack((l_img3, s_img))
             finalImage = np.vstack((l_img4, l_img5))
             finalImage = cv2.resize(finalImage, (1080, 600))
             ret, frame = cv2.imencode('.jpg', finalImage)
@@ -220,30 +217,25 @@ def gen(wvs):
             finalImage = frame.tobytes()
 
         yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + finalImage + b'\r\n\r\n') #########DOUBT#####CANT BE CHANGED########
+                   b'Content-Type: image/jpeg\r\n\r\n' + finalImage + b'\r\n\r\n')
 
 def SendAudio(clientAudioSocket , stream):
-    global quit1
-    while True:
-        q = quit1
-        if q == False:
-            if startaudio == 1:
-                data = stream.read(CHUNK)
-                clientAudioSocket.sendall(data)
-        else:
-            clientAudioSocket.shutdown(1)
-            clientAudioSocket.close()
-            break  ####CHANGED####
+    while quit1!=True:
+        if startaudio == 1:
+            data = stream.read(CHUNK)
+            # dataChunk = array('h', data)
+            # vol = max(dataChunk)
+            # if(vol > 500):
+            #     # print("Recording Sound...")
+            # else:
+            #     # print("Silence..")
+            #     pass
+            clientAudioSocket.sendall(data) #Same
 
 def RecieveAudio(clientAudioSocket , stream):
-    global quit1
-    while True:
-        q = quit1
-        if q == False:
-            data = recvallAudio(clientAudioSocket, BufferSize)
-            stream.write(data)
-        else:
-            break ######CHANGED#######
+    while quit1!=True:
+        data = recvallAudio(clientAudioSocket, BufferSize)
+        stream.write(data) #Same
 
 def recvallAudio(clientAudioSocket,size):
     databytes = b''
@@ -253,7 +245,7 @@ def recvallAudio(clientAudioSocket,size):
             databytes += clientAudioSocket.recv(4 * CHUNK)
         else:
             databytes += clientAudioSocket.recv(to_read)
-    return databytes ##########CHANGED######
+    return databytes #Same
 
 @app.route('/audio')
 def listen():
@@ -269,12 +261,9 @@ def SendFrame(clientVideoSocket1 , wvs):
     IP = get_ip_address()
     global quit1
     while True:
-        q = quit1
         if startvideo == 1:
             frame = wvs.read()
-            frame = cv2.resize(frame, (480,360))#(200,200)
-            # ret , frame = cv2.imencode('.jpg',frame)
-            # frame = frame.tobytes()
+            frame = cv2.resize(frame, (200,200))
             jpg_as_text = zlib.compress(frame, 9)
             lenip = struct.pack('!I',len(IP))
             if quit1 == False:
@@ -295,11 +284,8 @@ def SendFrame(clientVideoSocket1 , wvs):
                     bytesToBeSend = databytes
                     clientVideoSocket1.sendall(bytesToBeSend)
                     databytes = b''
-        if q == True:
-            clientVideoSocket1.shutdown(1)
-            clientVideoSocket1.close()
-            wvs.stop()
-            break  #######CHANGED########
+        elif quit1 == True:
+            break  #VErified
 
 def recvallVideo(clientVideoSocket, size):
     databytes = b''
@@ -309,7 +295,7 @@ def recvallVideo(clientVideoSocket, size):
             databytes += clientVideoSocket.recv(5000 * CHUNK)
         else:
             databytes += clientVideoSocket.recv(to_read)
-    return databytes ########CHANGED########
+    return databytes
 
 def get_ip_address():
     s = S.socket(S.AF_INET, S.SOCK_DGRAM)
@@ -327,6 +313,7 @@ def video():
     print ("Sucess Video")
     return "jskjdhsjk"
 
+
 @app.route('/quit')
 def quit112():
     global quit1
@@ -334,9 +321,69 @@ def quit112():
     print ("quit1 Sucess" , quit1)
     return render_template("home.html")
 
+@app.route('/f1')
+def filter_f1():
+    global f1
+    if f1==0:
+        f1 = 1
+        #func
+    else:
+        f1 = 0
+    return "Success"
+
+@app.route('/f2')
+def filter_f2():
+    global f2
+    if f2==0:
+        f2 = 1
+        #func
+    else:
+        f2 = 0
+    return "Success"
+
+@app.route('/f3')
+def filter_f3():
+    global f3
+    if f3==0:
+        f3 = 1
+        #func
+    else:
+        f3 = 0
+    return "Success"
+
+@app.route('/f4')
+def filter_f4():
+    global f4
+    if f4==0:
+        f4 = 1
+        #func
+    else:
+        f4 = 0
+    return "Success"
+
+@app.route('/f5')
+def filter_f5():
+    global f5
+    if f5==0:
+        f5 = 1
+        #func
+    else:
+        f5 = 0
+    return "Success"
+
+@app.route('/f6')
+def filter_f6():
+    global f6
+    if f6==0:
+        f6 = 1
+        #func
+    else:
+        f6 = 0
+    return "Success"
+
 def ServerMedia():
     # HOST = input("Enter Host IP\n")
-    HOST = '172.16.84.167'
+    HOST = '172.16.84.70'
     PORT_AUDIO = 10000
     PORT1 = 4000
     PORT2 = 5000
@@ -375,7 +422,7 @@ def ServerMedia():
             if PORT != port:
                 USERS[PORT].append(clients[i])
             i += 1
-        return tuple(clients), PORTS
+        return client1
 
     def ConnectionsUniv():
         while True:
@@ -383,23 +430,23 @@ def ServerMedia():
             addresses[client] = addr
             quitUsers[addr[0]] = False
             print("{} is connected!!".format(addr))
-            for port in sorted(ports.keys()):
+            for port in ports:
                 if ports[port] == False:
                     client.sendall(port.encode())
                     ports[port] = True
 
                     if port == '4000':
-                        clients, PORTS = accept(port, server1,server2,server3,server4)
-                        Thread(target=ClientConnectionVideo, args=(port, client, clients, PORTS,)).start()
+                        client1 = accept(port, server1,server2,server3,server4)
+                        Thread(target=ClientConnectionVideo, args=(port, client, client1, )).start()
                     if port == '5000':
-                        clients, PORTS = accept(port, server2,server1,server3,server4)
-                        Thread(target=ClientConnectionVideo, args=(port, client, clients, PORTS,)).start()
+                        client1 = accept(port, server2,server1,server3,server4)
+                        Thread(target=ClientConnectionVideo, args=(port, client, client1, )).start()
                     if port == '6000':
-                        clients, PORTS = accept(port, server3,server1,server2,server4)
-                        Thread(target=ClientConnectionVideo, args=(port, client, clients, PORTS,)).start()
+                        client1 = accept(port, server3,server1,server2,server4)
+                        Thread(target=ClientConnectionVideo, args=(port, client, client1, )).start()
                     if port == '7000':
-                        clients, PORTS = accept(port, server4,server1,server2,server3)
-                        Thread(target=ClientConnectionVideo, args=(port, client, clients, PORTS,)).start()
+                        client1 = accept(port, server4,server1,server2,server3)
+                        Thread(target=ClientConnectionVideo, args=(port, client, client1, )).start()
                     break
 
     def ConnectionsSound():
@@ -410,51 +457,34 @@ def ServerMedia():
             Thread(target=ClientConnectionSound, args=(clientAudio, )).start()
 
 
-    def ClientConnectionVideo(port, client, clients, PORTS):
-        try:
-            while True:
-                if len(addresses)>1:
-                    databytes = b''
-                    client1 = clients[0]
-                    lengthbuf = recvall(port, client1, 4)
-                    databytes += lengthbuf
-                    length, = struct.unpack('!I', lengthbuf)
-                    STATUS  = recvall(port, client1, 6)
-                    databytes += STATUS
-                    STATUS = STATUS.decode()
-                    databytes += recvall(port, client1, length-6)
-                    broadcastVideo(port, databytes)
-                    if STATUS == "INTIVE":
-                        i = 0
-                        quitUsers[addresses[client][0]] = True
-                        del addresses[client]
-                        ports[port] = False
-                        for PORT in PORTS:
-                            if PORT != port:
-                                # clients[i].shutdown(1)
-                                # clients[i].close()
-                                USERS[PORT].remove(clients[i])
-                            i += 1
-                        # client1.shutdown(1)
-                        # client1.close()
-                        # client.shutdown(1)
-                        # client.close()
-                        break
-        except:
-            ports[port] = False
+    def ClientConnectionVideo(port, client, client1):
+        while True:
+            if len(addresses)>1:
+                databytes = b''
+                lengthbuf = recvall(port, client1, 4)
+                databytes += lengthbuf
+                length, = struct.unpack('!I', lengthbuf)
+                STATUS  = recvall(port, client1, 6)
+                databytes += STATUS
+                STATUS = STATUS.decode()
+                databytes += recvall(port, client1, length-6)
+                broadcastVideo(port, databytes)
+                if STATUS == "INTIVE":
+                    del addresses[client]
+                    quitUsers[addresses[client][0]] = True
+                    ports[port] = False
+                    break
+
 
     def ClientConnectionSound(clientAudio):
-        try:
-            while True:
-                if quitUsers[addressesAudio[clientAudio]] == False:
-                    data = clientAudio.recv(BufferSize)
-                    broadcastSound(clientAudio, data)
-                else:
-                    quitUsers[addressesAudio[clientAudio]] = False
-                    del addressesAudio[clientAudio]
-                    break
-        except:
-            pass
+        while True:
+            if quitUsers[addressesAudio[clientAudio]] == False:
+                data = clientAudio.recv(BufferSize)
+                broadcastSound(clientAudio, data)
+            else:
+                quitUsers[addressesAudio[clientAudio]] = False
+                del addressesAudio[clientAudio]
+                break
 
 
     def recvall(port, client1, BufferSize):
@@ -470,33 +500,22 @@ def ServerMedia():
                 i = len(databytes)
         return databytes
 
-    def broadcastVideoFrame(client, data_to_be_sent, port):
-        try:
-            client.sendall(data_to_be_sent)
-        except:
-            # ports[port] = False
-            # USERS[port] = []
-            pass
-
+    def broadcastVideoFrame(client, data_to_be_sent):
+        client.sendall(data_to_be_sent)
 
     def broadcastVideo(port, data_to_be_sent):
-        # threads = []
+        threads = []
         for client in USERS[port]:
-            frameThread = Thread(target=broadcastVideoFrame, args=(client, data_to_be_sent, port, ))
+            frameThread = Thread(target=broadcastVideoFrame, args=(client, data_to_be_sent, ))
+            threads.append(frameThread)
             frameThread.start()
-            # threads.append(frameThread)
-            frameThread.join()
-        # for thread in threads:
-            # thread.join()
+        for thread in threads:
+            thread.join()
 
     def broadcastSound(clientSocket, data_to_be_sent):
-        temp = addressesAudio.copy()
-        for clientAudio in temp:
+        for clientAudio in addressesAudio:
             if clientAudio != clientSocket:
-                try:
-                    clientAudio.sendall(data_to_be_sent)
-                except:
-                    pass
+                clientAudio.sendall(data_to_be_sent)
 
 
     serverAudio = socket(family=AF_INET, type=SOCK_STREAM)
@@ -538,6 +557,7 @@ def ServerMedia():
     serverAudio.listen(4)
     AcceptThreadAudio = Thread(target=ConnectionsSound)
     AcceptThreadAudio.start()
+
 
     serverUniv.listen(4)
     server1.listen(4)
